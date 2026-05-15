@@ -1,5 +1,5 @@
 from unittest.mock import patch, Mock
-from src.abuselpdb_api import ApiAbuseIPDB
+from src.integrations_apis import ApiIntegrations
 
 
 def test_requisicao_coleta_ips():
@@ -21,7 +21,7 @@ def test_requisicao_coleta_ips():
     endpoint = "https://api.abuseipdb.com/api/v2/blacklist"
     token = "TOKEN_TESTE"
 
-    api = ApiAbuseIPDB(endpoint, token)
+    api = ApiIntegrations(endpoint, token)
 
     # Resposta falsa da API (texto bruto, pois o método retorna response.text)
     fake_response_text = """
@@ -47,9 +47,9 @@ def test_requisicao_coleta_ips():
     # Executa a função que queremos testar
     # =====================================================
 
-    with patch('src.abuselpdb_api.requests.request', return_value=mock_response) as mock_request:
+    with patch('src.integrations_apis.requests.request', return_value=mock_response) as mock_request:
 
-        resultado = api.requisicao_coleta_ips()
+        resultado = api.abuseipdb_requisicao_coletaips()
 
         # =================================================
         # ASSERT
