@@ -1,45 +1,78 @@
-import json
 from unittest.mock import patch, Mock
-from src.ioc_api import Apioc
+from src.abuselpdb_api import ApiAbuseIPDB
 
 
-@patch("requests.request")
-def test_requisicao_para_x_ips(mock_request):
-    # Arrange
-    endpoint = "https://api.abuseipdb.com/api/v2/check"
-    token = "fake_token"
+def test_requisicao_coleta_ips():
+    """
+    Testa se a função:
+    
+    1. Faz requisição GET corretamente
+    2. Envia headers corretos
+    3. Envia parâmetros corretos
+    4. Retorna texto da resposta
+    """
 
-    api = Apioc(endpoint, token)
+    # =====================================================
+    # ARRANGE
+    # =====================================================
+    # Prepara os dados necessários para o teste
+    # =====================================================
 
+    endpoint = "https://api.abuseipdb.com/api/v2/blacklist"
+    token = "TOKEN_TESTE"
+
+    api = ApiAbuseIPDB(endpoint, token)
+
+    # Resposta falsa da API (texto bruto, pois o método retorna response.text)
+    fake_response_text = """
+    {
+        "data": [
+            {
+                "ipAddress": "8.8.8.8",
+                "abuseConfidenceScore": 100
+            }
+        ]
+    }
+    """
+
+    # Mock da resposta HTTP
     mock_response = Mock()
-    mock_response.text = json.dumps({
-        "data": {
-            "ipAddress": "118.25.7.39",
-            "abuseConfidenceScore": 100
-        }
-    })
 
-    mock_request.return_value = mock_response
+    # Simula response.text da biblioteca requests
+    mock_response.text = fake_response_text
 
-    # Act
-    response = api.requisicao_para_x_ips(
-        accept="application/json",
-        method="get"
-    )
+    # =====================================================
+    # ACT
+    # =====================================================
+    # Executa a função que queremos testar
+    # =====================================================
 
-    # Assert
-    assert response["data"]["ipAddress"] == "118.25.7.39"
-    assert response["data"]["abuseConfidenceScore"] == 100
+    with patch('src.abuselpdb_api.requests.request', return_value=mock_response) as mock_request:
 
-    mock_request.assert_called_once_with(
-        method="GET",
-        url=endpoint,
-        headers={
-            "Accept": "application/json",
-            "Key": token
-        },
-        params={
-            "ipAddress": "118.25.7.39",
-            "maxAgeInDays": "90"
-        }
-    )
+        resultado = api.requisicao_coleta_ips()
+
+        # =================================================
+        # ASSERT
+        # =================================================
+        # Verifica se tudo ocorreu corretamente
+        # =================================================
+
+        # Verifica retorno
+        assert resultado == fake_response_text
+
+        # Verifica se requests.request foi chamado
+        mock_request.assert_called_once()
+
+        # Verifica parâmetros enviados
+        mock_request.assert_called_with(
+            method='GET',
+            url=endpoint,
+            headers={
+                'Accept': 'text/plain',
+                'Key': token
+            },
+            params={
+                'limit': '10000',
+                'ipVersion': 4
+            }
+        )
